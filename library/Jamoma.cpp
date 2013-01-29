@@ -9,7 +9,7 @@
 //
 class TTRubyInstance {
 public:
-	TTAudioObjectPtr		obj;
+	TTAudioObjectBasePtr		obj;
 	TTHashPtr				parameterNames;		// cache of parameter names, mapped from lowercase (ruby) to uppercase (TT)
 	TTHashPtr				messageNames;		// cache of parameter names, mapped from lowercase (ruby) to uppercase (TT)
 	
@@ -141,10 +141,10 @@ VALUE TTRubyInitialize(VALUE self, VALUE className)
 	args.clear();
 	
 	if (classNameTTStr == "environment")
-		instance->obj = (TTAudioObject*)ttEnvironment;
+		instance->obj = (TTAudioObjectBase*)ttEnvironment;
 		// right now we just leak all of our instances (oops), but when we do free them correctly we don't want to free the environment!
 	else
-		err = TTObjectInstantiate(classNameTTStr, &instance->obj, args);
+		err = TTObjectBaseInstantiate(classNameTTStr, &instance->obj, args);
 		
 	if (!err) {
 		instance->parameterNames = new TTHash;	// TODO: need to free this
@@ -588,8 +588,8 @@ VALUE TTAudioInitialize(int argc, VALUE* argv, VALUE self)
 		}
 	}				
 	
-	//err = TTObjectInstantiate(RSTRING_PTR(classNameStr), &instance->obj, args);
-	err = TTObjectInstantiate("audio.object", (TTObjectPtr*)&instance->obj, args);
+	//err = TTObjectBaseInstantiate(RSTRING_PTR(classNameStr), &instance->obj, args);
+	err = TTObjectBaseInstantiate("audio.object", (TTObjectBasePtr*)&instance->obj, args);
 	
 	if (!err) {
 		instance->parameterNames = new TTHash;	// TODO: need to free this
@@ -622,7 +622,7 @@ VALUE TTAudioInitialize(int argc, VALUE* argv, VALUE self)
 		return self;
 	}
 	else {
-		std::cout << "TTObjectInstantiate failed to create object" << std::endl;
+		std::cout << "TTObjectBaseInstantiate failed to create object" << std::endl;
 		return 0;
 	}
 }
