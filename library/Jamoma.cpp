@@ -152,7 +152,7 @@ VALUE TTRubyInitialize(VALUE self, VALUE className)
 	if (!err) {
 		instance->parameterNames = new TTHash;	// TODO: need to free this
 		instance->obj->getAttributeNames(names);
-		n = names.getSize();
+		n = names.size();
 		for (int i=0; i<n; i++) {
 			names.get(i, aName);
 			nameString = aName.c_str();
@@ -164,7 +164,7 @@ VALUE TTRubyInitialize(VALUE self, VALUE className)
 		
 		instance->messageNames = new TTHash;	// TODO: need to free this
 		instance->obj->getMessageNames(names);
-		n = names.getSize();
+		n = names.size();
 		for (int i=0; i<n; i++) {
 			names.get(i, aName);
 			nameString = aName.c_str();
@@ -174,7 +174,7 @@ VALUE TTRubyInitialize(VALUE self, VALUE className)
 			}
 		}
 		
-		v.setSize(1);
+		v.resize(1);
 		v.set(0, TTPtr(instance));
 		gTTRubyInstances->append(TTPtr(self), v);
 		return self;
@@ -203,13 +203,13 @@ VALUE TTRubyGetMessages(VALUE self)
 
 	err = gTTRubyInstances->lookup(TTPtr(self), v);
 	if (!err) {
-		v.get(0, (TTPtr*)(&instance));
+		instance = (TTRubyInstance*)TTPtr(v[0]);
 		if (instance) {
 			TTValue names;
 			
 			instance->messageNames->getKeys(names);
 			//instance->obj->getMessageNames(v);			
-			size = names.getSize();
+			size = names.size();
 			returnValue = rb_ary_new2(size);
 			for (TTUInt16 i=0; i<size; i++) {				
 				names.get(i, s);
@@ -239,14 +239,14 @@ VALUE TTRubySendMessage(int argc, VALUE* argv, VALUE self)
 	messageNameStr = StringValue(argv[0]);	
 	err = gTTRubyInstances->lookup(TTPtr(self), v_temp);
 	if (!err) {
-		v_temp.get(0, (TTPtr*)&instance);
+		instance = (TTRubyInstance*)TTPtr(v_temp[0]);
 		if (instance) {
 			TTSymbol	messageName = kTTSymEmpty;
 			TTValue		messageNameValue;
 
 			messageName = RSTRING_PTR(messageNameStr);
 			instance->messageNames->lookup(messageName, messageNameValue);
-			messageNameValue.get(0, messageName);
+			messageName = messageNameValue[0];
 
 //			if (argc == 1) {		// no arguments...
 //				err = instance->obj->sendMessage(messageName);
@@ -297,7 +297,7 @@ VALUE TTRubySendMessage(int argc, VALUE* argv, VALUE self)
 			else {
 				// return an array -- the first item is the error code
 				// additional values may follow
-				int		size = v_out.getSize();
+				int		size = v_out.size();
 				int		i;
 				VALUE	ret = rb_ary_new2(size + 1);
 				
@@ -306,7 +306,7 @@ VALUE TTRubySendMessage(int argc, VALUE* argv, VALUE self)
 					
 					// TODO: support other types
 					
-					if (v_out.getType(i) == kTypeFloat64 || v_out.getType(0) == kTypeFloat32) {
+					if (v_out[i].type() == kTypeFloat64 || v_out[0].type() == kTypeFloat32) {
 						
 						TTFloat64	f;
 						VALUE		fv;
@@ -317,9 +317,9 @@ VALUE TTRubySendMessage(int argc, VALUE* argv, VALUE self)
 
 						rb_ary_store(ret, i+1, fv);
 					}
-					else if (v_out.getType(i) == kTypeObject)
+					else if (v_out[i].type() == kTypeObject)
 						std::cout << "objects as return values are not yet supported" << std::endl;
-					else if (v_out.getType(i) == kTypeSymbol) {
+					else if (v_out[i].type() == kTypeSymbol) {
 						TTSymbol	sp = kTTSymEmpty;
 						TTCString	c; 
 						
@@ -359,13 +359,13 @@ VALUE TTRubyGetAttributes(VALUE self)
 
 	err = gTTRubyInstances->lookup(TTPtr(self), v);
 	if (!err) {
-		v.get(0, (TTPtr*)(&instance));
+		instance = (TTRubyInstance*)TTPtr(v[0]);
 		if (instance) {
 			TTValue names;
 			
 			instance->parameterNames->getKeys(names);
 			//instance->obj->getAttributeNames(v);			
-			size = names.getSize();
+			size = names.size();
 			returnValue = rb_ary_new2(size);
 			for (TTUInt16 i=0; i<size; i++) {				
 				names.get(i, s);
@@ -388,7 +388,7 @@ VALUE TTRubySetAttribute(VALUE self, VALUE attributeName, VALUE attributeValue)
 	
 	err = gTTRubyInstances->lookup(TTPtr(self), v);
 	if (!err) {
-		v.get(0, (TTPtr*)&instance);
+		instance = (TTRubyInstance*)TTPtr(v[0]);
 		if (instance) {
 			int t = TYPE(attributeValue);
 
@@ -452,7 +452,7 @@ VALUE TTRubyGetAttribute(VALUE self, VALUE attributeName)
 	
 	err = gTTRubyInstances->lookup(TTPtr(self), v);
 	if (!err) {
-		v.get(0, (TTPtr*)&instance);
+		instance = (TTRubyInstance*)TTPtr(v[0]);
 		if (instance) {
 			TTSymbol	parameterName = kTTSymEmpty;
 			TTValue		parameterNameValue;
@@ -469,7 +469,7 @@ VALUE TTRubyGetAttribute(VALUE self, VALUE attributeName)
 
 			// TODO: not handling array attrs yet...
 			
-			switch (v.getType(0)) {
+			switch (v[0].type()) {
 				case kTypeFloat64:
 				case kTypeFloat32:
 					returnValue = rb_float_new(v);
@@ -520,7 +520,7 @@ VALUE TTRubyCalculate(VALUE self, VALUE x)
 	
 	err = gTTRubyInstances->lookup(TTPtr(self), v);
 	if (!err) {
-		v.get(0, (TTPtr*)(&instance));
+		instance = (TTRubyInstance*)TTPtr(v[0]);
 		if (instance) {			
 			TTFloat64 fx = NUM2DBL(x);
 			TTFloat64 fy = 0.0;
@@ -597,7 +597,7 @@ VALUE TTAudioInitialize(int argc, VALUE* argv, VALUE self)
 	if (!err) {
 		instance->parameterNames = new TTHash;	// TODO: need to free this
 		instance->obj->getUnitGenerator()->getAttributeNames(names);
-		n = names.getSize();
+		n = names.size();
 		for (int i=0; i<n; i++) {
 			names.get(i, aName);
 			nameString = aName.c_str();
@@ -609,7 +609,7 @@ VALUE TTAudioInitialize(int argc, VALUE* argv, VALUE self)
 
 		instance->messageNames = new TTHash;	// TODO: need to free this
 		instance->obj->getUnitGenerator()->getMessageNames(names);
-		n = names.getSize();
+		n = names.size();
 		for (int i=0; i<n; i++) {
 			names.get(i, aName);
 			nameString = aName.c_str();
@@ -619,8 +619,8 @@ VALUE TTAudioInitialize(int argc, VALUE* argv, VALUE self)
 			}
 		}
 				
-		v.setSize(1);
-		v.set(0, TTPtr(instance));
+		v.resize(1);
+		v[0] = TTPtr(instance);
 		gTTAudioInstances->append(TTPtr(self), v);
 		return self;
 	}
@@ -643,13 +643,13 @@ VALUE TTAudioGetMessages(VALUE self)
 
 	err = gTTAudioInstances->lookup(TTPtr(self), v);
 	if (!err) {
-		v.get(0, (TTPtr*)(&instance));
+		instance = (TTAudioInstance*)TTPtr(v[0]);
 		if (instance) {
 			TTValue names;
 			
 			instance->messageNames->getKeys(names);	
 			//instance->obj->getUnitGenerator()->getMessageNames(v);			
-			size = names.getSize();
+			size = names.size();
 			returnValue = rb_ary_new2(size);
 			for (TTUInt16 i=0; i<size; i++) {				
 				names.get(i, s);
@@ -680,7 +680,7 @@ VALUE TTAudioSendMessage(int argc, VALUE* argv, VALUE self)
 	messageNameStr = StringValue(argv[0]);	
 	err = gTTAudioInstances->lookup(TTPtr(self), v_temp);
 	if (!err) {
-		v_temp.get(0, (TTPtr*)&instance);
+		instance = (TTAudioInstance*)TTPtr(v_temp[0]);
 		if (instance) {
 			TTSymbol	messageName = kTTSymEmpty;
 			TTValue		messageNameValue;
@@ -738,7 +738,7 @@ VALUE TTAudioSendMessage(int argc, VALUE* argv, VALUE self)
 			else {
 				// return an array -- the first item is the error code
 				// additional values may follow
-				int		size = v_out.getSize();
+				int		size = v_out.size();
 				int		i;
 				VALUE	ret = rb_ary_new2(size + 1);
 				
@@ -747,7 +747,7 @@ VALUE TTAudioSendMessage(int argc, VALUE* argv, VALUE self)
 					
 					// TODO: support other types
 					
-					if (v_out.getType(i) == kTypeFloat64 || v_out.getType(0) == kTypeFloat32) {
+					if (v_out[i].type() == kTypeFloat64 || v_out[0].type() == kTypeFloat32) {
 						
 						TTFloat64	f;
 						VALUE		fv;
@@ -758,9 +758,9 @@ VALUE TTAudioSendMessage(int argc, VALUE* argv, VALUE self)
 
 						rb_ary_store(ret, i+1, fv);
 					}
-					else if (v_out.getType(i) == kTypeObject)
+					else if (v_out[i].type() == kTypeObject)
 						std::cout << "objects as return values are not yet supported" << std::endl;
-					else if (v_out.getType(i) == kTypeSymbol) {
+					else if (v_out[i].type() == kTypeSymbol) {
 						TTSymbol	sp = kTTSymEmpty;
 						TTCString	c; 
 						
@@ -800,14 +800,14 @@ VALUE TTAudioGetAttributes(VALUE self)
 
 	err = gTTAudioInstances->lookup(TTPtr(self), v);
 	if (!err) {
-		v.get(0, (TTPtr*)(&instance));
+		instance = (TTAudioInstance*)TTPtr(v[0]);
 		if (instance) {
 			TTValue names;
 			
 			instance->parameterNames->getKeys(names);
 			//instance->obj->getAttributeNames(v);			
 			//instance->obj->getUnitGenerator()->getAttributeNames(v);			
-			size = names.getSize();
+			size = names.size();
 			returnValue = rb_ary_new2(size);
 			for (TTUInt16 i=0; i<size; i++) {				
 				names.get(i, s);
@@ -830,7 +830,7 @@ VALUE TTAudioSetAttribute(VALUE self, VALUE attributeName, VALUE attributeValue)
 
 	err = gTTAudioInstances->lookup(TTPtr(self), v);
 	if (!err) {
-		v.get(0, (TTPtr*)&instance);
+		instance = (TTAudioInstance*)TTPtr(v[0]);
 		if (instance) {
 			int t = TYPE(attributeValue);
 
@@ -894,7 +894,7 @@ VALUE TTAudioGetAttribute(VALUE self, VALUE attributeName)
 
 	err = gTTAudioInstances->lookup(TTPtr(self), v);
 	if (!err) {
-		v.get(0, (TTPtr*)&instance);
+		instance = (TTAudioInstance*)TTPtr(v[0]);
 		if (instance) {
 			TTSymbol	parameterName = kTTSymEmpty;
 			TTValue		parameterNameValue;
@@ -911,7 +911,7 @@ VALUE TTAudioGetAttribute(VALUE self, VALUE attributeName)
 
 			// TODO: not handling array attrs yet...
 
-			switch (v.getType(0)) {
+			switch (v[0].type()) {
 				case kTypeFloat64:
 				case kTypeFloat32:
 					returnValue = rb_float_new(v);
@@ -961,7 +961,7 @@ VALUE TTAudioReset(VALUE self)
 
 	err = gTTAudioInstances->lookup(TTPtr(self), v);
 	if (!err) {
-		v.get(0, (TTPtr*)(&instance));
+		instance = (TTAudioInstance*)TTPtr(v[0]);
 		if (instance) {			
 			instance->obj->resetAudio();			
 		}
@@ -987,7 +987,7 @@ VALUE TTAudioConnect(int argc, VALUE* argv, VALUE self)
 	if (TYPE(argv[0]) == T_OBJECT) {
 		err = gTTAudioInstances->lookup(TTPtr(argv[0]), v);
 		if (!err) {
-			v.get(0, (TTPtr*)(&instanceToConnect));
+			instanceToConnect = (TTAudioInstance*)TTPtr(v[0]);
 		}		
 	}
 
@@ -1004,7 +1004,7 @@ VALUE TTAudioConnect(int argc, VALUE* argv, VALUE self)
 
 	err = gTTAudioInstances->lookup(TTPtr(self), v);
 	if (!err) {
-		v.get(0, (TTPtr*)(&instance));
+		instance = (TTAudioInstance*)TTPtr(v[0]);
 		if (instance) {			
 			instance->obj->connectAudio(instanceToConnect->obj, outletNumberFromWhichToConnect, inletNumberToWhichToConnect);			
 		}
@@ -1031,7 +1031,7 @@ VALUE TTAudioDrop(int argc, VALUE* argv, VALUE self)
 	if (TYPE(argv[0]) == T_OBJECT) {
 		err = gTTAudioInstances->lookup(TTPtr(argv[0]), v);
 		if (!err) {
-			v.get(0, (TTPtr*)(&instanceToConnect));
+			instanceToConnect = (TTAudioInstance*)TTPtr(v[0]);
 		}		
 	}
 
@@ -1048,7 +1048,7 @@ VALUE TTAudioDrop(int argc, VALUE* argv, VALUE self)
 
 	err = gTTAudioInstances->lookup(TTPtr(self), v);
 	if (!err) {
-		v.get(0, (TTPtr*)(&instance));
+		instance = (TTAudioInstance*)TTPtr(v[0]);
 		if (instance) {
 			instance->obj->dropAudio(instanceToConnect->obj, outletNumberFromWhichToConnect, inletNumberToWhichToConnect);			
 		}
@@ -1069,7 +1069,7 @@ VALUE TTAudioExportMax(VALUE self, VALUE pathToExportFile)
 
 	err = gTTAudioInstances->lookup(TTPtr(self), v);
 	if (!err) {
-		v.get(0, (TTPtr*)(&instance));
+		instance = (TTAudioInstance*)TTPtr(v[0]);
 		if (instance) {
 			instance->obj->getAudioDescription(desc);
 			desc.exportMax(path);
@@ -1089,7 +1089,7 @@ VALUE TTAudioExportCpp(VALUE self, VALUE pathToExportFile)
 
 	err = gTTAudioInstances->lookup(TTPtr(self), v);
 	if (!err) {
-		v.get(0, (TTPtr*)(&instance));
+		instance = (TTAudioInstance*)TTPtr(v[0]);
 		if (instance) {
 			instance->obj->getAudioDescription(desc);
 			desc.exportCpp(path);
