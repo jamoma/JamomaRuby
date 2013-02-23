@@ -145,6 +145,9 @@ VALUE TTRubyInitialize(VALUE self, VALUE className)
 		// right now we just leak all of our instances (oops), but when we do free them correctly we don't want to free the environment!
 	else
 		err = TTObjectBaseInstantiate(classNameTTStr, &instance->obj, args);
+	
+	if (err)
+		std::cout << "Error " << err << " for object " << classNameTTStr.c_str() << std::endl;
 		
 	if (!err) {
 		instance->parameterNames = new TTHash;	// TODO: need to free this
