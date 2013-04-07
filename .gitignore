@@ -24,3 +24,5 @@ Makefile
 
 examples/Rails/public/images/temp-*.svg
 examples/Rails/public/images/temp.svg
+
+library/Jamoma
