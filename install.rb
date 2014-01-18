@@ -9,7 +9,10 @@ end
 if !File.exists? "/Library/Ruby/Site/1.8/universal-darwin12.0"
   `sudo mkdir /Library/Ruby/Site/1.8/universal-darwin12.0`
 end
-  
+if !File.exists? "/Library/Ruby/Site/2.0.0/universal-darwin13"
+  `sudo mkdir /Library/Ruby/Site/2.0.0/universal-darwin13`
+end
+
 if !File.exists? "/Library/Ruby/Site/1.8/universal-darwin10.0/Jamoma"
   `sudo rm -rf /Library/Ruby/Site/1.8/universal-darwin10.0/Jamoma`
   `sudo rm -rf /Library/Ruby/Site/1.8/universal-darwin10.0/Jamoma.bundle`
@@ -22,14 +25,12 @@ if !File.exists? "/Library/Ruby/Site/1.8/universal-darwin12.0/Jamoma"
   `sudo ln -s "#{Dir.pwd}"/library/Jamoma.bundle /Library/Ruby/Site/1.8/universal-darwin12.0/Jamoma.bundle`
   `sudo ln -s "#{Dir.pwd}"/library/Jamoma /Library/Ruby/Site/1.8/universal-darwin12.0/Jamoma`
 end
-
-#`cd library; make install`
-
-
-
-#/Library/Ruby/Site/1.8/universal-darwin10.0/Jamoma.bundle
-#/Library/Ruby/Site/1.8/universal-darwin12.0/Jamoma.bundle
-
+if !File.exists? "/Library/Ruby/Site/2.0.0/universal-darwin13/Jamoma"
+  `sudo rm -rf /Library/Ruby/Site/2.0.0/universal-darwin13/Jamoma`
+  `sudo rm -rf /Library/Ruby/Site/2.0.0/universal-darwin13/Jamoma.bundle`
+  `sudo ln -s "#{Dir.pwd}"/library/Jamoma.bundle /Library/Ruby/Site/2.0.0/universal-darwin13/Jamoma.bundle`
+  `sudo ln -s "#{Dir.pwd}"/library/Jamoma /Library/Ruby/Site/2.0.0/universal-darwin13/Jamoma`
+end
 
 puts
 puts "=================DONE===================="
