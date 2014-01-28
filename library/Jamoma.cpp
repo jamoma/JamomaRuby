@@ -23,7 +23,7 @@ public:
 //
 class TTAudioInstance {
 public:
-	TTAudioGraphObjectPtr	obj;
+	TTAudioGraphObjectBasePtr	obj;
 	TTHashPtr				parameterNames;		// cache of parameter names, mapped from lowercase (ruby) to uppercase (TT)
 	TTHashPtr				messageNames;		// cache of parameter names, mapped from lowercase (ruby) to uppercase (TT)
 	
