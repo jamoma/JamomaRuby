@@ -9,13 +9,15 @@
 //
 class TTRubyInstance {
 public:
-	TTAudioObjectBasePtr		obj;
+//	TTAudioObjectBasePtr		obj;
+	TTAudioObject			obj;
 	TTHashPtr				parameterNames;		// cache of parameter names, mapped from lowercase (ruby) to uppercase (TT)
 	TTHashPtr				messageNames;		// cache of parameter names, mapped from lowercase (ruby) to uppercase (TT)
 	
-	TTRubyInstance()
+	TTRubyInstance(const TTSymbol name, const TTValue args) : 
+	obj(name, args)
 	{
-		obj = NULL;
+		;
 	}
 };
 
@@ -23,13 +25,15 @@ public:
 //
 class TTAudioInstance {
 public:
-	TTAudioGraphObjectBasePtr	obj;
+//	TTAudioGraphObjectBasePtr	obj;
+	TTAudioGraphObject		obj;
 	TTHashPtr				parameterNames;		// cache of parameter names, mapped from lowercase (ruby) to uppercase (TT)
 	TTHashPtr				messageNames;		// cache of parameter names, mapped from lowercase (ruby) to uppercase (TT)
 	
-	TTAudioInstance()
+	TTAudioInstance(const TTValue args) :
+	obj(args)
 	{
-		obj = NULL;
+		;
 	}
 };
 
@@ -127,7 +131,6 @@ void Init_Jamoma()
 
 VALUE TTRubyInitialize(VALUE self, VALUE className)
 {	
-	TTRubyInstance* instance = new TTRubyInstance;
 	TTValue			v;
 	TTValue			args;
 	TTErr			err = kTTErrNone;
@@ -137,50 +140,49 @@ VALUE TTRubyInitialize(VALUE self, VALUE className)
 	TTValue			names;
 	TTSymbol		aName = kTTSymEmpty;
 	TTString		nameString;
-	
+	TTRubyInstance* instance;
 	args.clear();
 	
-	if (classNameTTStr == "environment")
-		instance->obj = (TTAudioObjectBase*)ttEnvironment;
-		// right now we just leak all of our instances (oops), but when we do free them correctly we don't want to free the environment!
-	else
-		err = TTObjectBaseInstantiate(classNameTTStr, &instance->obj, args);
-	
-	if (err)
-		std::cout << "Error " << err << " for object " << classNameTTStr.c_str() << std::endl;
+	try {
+// right now we just leak all of our instances (oops), but when we do free them correctly we don't want to free the environment!
+//		if (classNameTTStr == "environment")
+//			instance->obj = (TTAudioObjectBase*)ttEnvironment;
 		
-	if (!err) {
-		instance->parameterNames = new TTHash;	// TODO: need to free this
-		instance->obj->getAttributeNames(names);
-		n = names.size();
-		for (int i=0; i<n; i++) {
-			names.get(i, aName);
-			nameString = aName.c_str();
-			{
-				v = aName;
-				instance->parameterNames->append(TTSymbol(nameString.c_str()), v);
-			}
-		}
-		
-		instance->messageNames = new TTHash;	// TODO: need to free this
-		instance->obj->getMessageNames(names);
-		n = names.size();
-		for (int i=0; i<n; i++) {
-			names.get(i, aName);
-			nameString = aName.c_str();
-			{
-				v = aName;
-				instance->messageNames->append(TTSymbol(nameString.c_str()), v);
-			}
-		}
-		
-		v.resize(1);
-		v.set(0, TTPtr(instance));
-		gTTRubyInstances->append(TTPtr(self), v);
-		return self;
+		instance = new TTRubyInstance(classNameTTStr, args);
 	}
-	else
+	catch (...) {
+		std::cout << "Error loading object " << classNameTTStr.c_str() << std::endl;
 		return 0;
+	}
+
+	instance->parameterNames = new TTHash;	// TODO: need to free this
+	instance->obj.attributes(names);
+	n = names.size();
+	for (int i=0; i<n; i++) {
+		names.get(i, aName);
+		nameString = aName.c_str();
+		{
+			v = aName;
+			instance->parameterNames->append(TTSymbol(nameString.c_str()), v);
+		}
+	}
+	
+	instance->messageNames = new TTHash;	// TODO: need to free this
+	instance->obj.messages(names);
+	n = names.size();
+	for (int i=0; i<n; i++) {
+		names.get(i, aName);
+		nameString = aName.c_str();
+		{
+			v = aName;
+			instance->messageNames->append(TTSymbol(nameString.c_str()), v);
+		}
+	}
+	
+	v.resize(1);
+	v.set(0, TTPtr(instance));
+	gTTRubyInstances->append(TTPtr(self), v);
+	return self;
 }
 
 // VALUE TTRubyInitializeCopy(VALUE self, VALUE orig)
@@ -288,7 +290,7 @@ VALUE TTRubySendMessage(int argc, VALUE* argv, VALUE self)
 				}				
 
 				if (!err) {
-					err = instance->obj->sendMessage(messageName, v_in, v_out);
+					err = instance->obj.send(messageName, v_in, v_out);
 				}
 //			}
 			
@@ -429,7 +431,7 @@ VALUE TTRubySetAttribute(VALUE self, VALUE attributeName, VALUE attributeValue)
 				instance->parameterNames->lookup(parameterName, parameterNameValue);
 				parameterNameValue.get(0, parameterName);
 				
-				err = instance->obj->setAttributeValue(parameterName, v);
+				err = instance->obj.set(parameterName, v);
 			}
 			if (err)
 				std::cout << "TTRubySetAttribute: Error " << err << std::endl;
@@ -461,7 +463,7 @@ VALUE TTRubyGetAttribute(VALUE self, VALUE attributeName)
 			instance->parameterNames->lookup(parameterName, parameterNameValue);
 			parameterNameValue.get(0, parameterName);
 			
-			err = instance->obj->getAttributeValue(parameterName, v);
+			err = instance->obj.get(parameterName, v);
 			if (err) {
 				std::cout << "TTRubyGetAttribute: Error " << err << std::endl;
 				goto out;
@@ -525,7 +527,7 @@ VALUE TTRubyCalculate(VALUE self, VALUE x)
 			TTFloat64 fx = NUM2DBL(x);
 			TTFloat64 fy = 0.0;
 
-			err = instance->obj->calculate(fx, fy);			
+			err = instance->obj.calculate(fx, fy);			
 			returnValue = rb_float_new(fy);
 		}
 	}
@@ -542,22 +544,15 @@ VALUE TTRubyCalculate(VALUE self, VALUE x)
 //VALUE TTAudioInitialize(VALUE self, VALUE className)
 VALUE TTAudioInitialize(int argc, VALUE* argv, VALUE self)
 {	
-	TTAudioInstance*	instance = new TTAudioInstance;
-	TTValue				v;
-	TTValue				args;
-	TTErr				err = kTTErrNone;
-	//VALUE				classNameStr = StringValue(className);
-	VALUE				messageArgStr;
-	long				n;
-	TTValue				names;
-	TTSymbol			aName = kTTSymEmpty;
-	TTString			nameString;
-
 	if (argc < 1) {
 		std::cout << "ERROR -- TTAudio requires at least 1 argument (the name of the object class to create)" << std::endl;
 		return 0;
 	}
 
+	VALUE	messageArgStr;
+	TTValue	args;
+	TTErr				err = kTTErrNone;
+	
 	args.clear();
 	for (int i=0; i<argc; i++) {
 		int t = TYPE(argv[i]);
@@ -591,12 +586,20 @@ VALUE TTAudioInitialize(int argc, VALUE* argv, VALUE self)
 		}
 	}				
 	
+	TTAudioInstance*	instance = new TTAudioInstance(args);
+	TTValue				v;
+	long				n;
+	TTValue				names;
+	TTSymbol			aName = kTTSymEmpty;
+	TTString			nameString;
+
 	//err = TTObjectBaseInstantiate(RSTRING_PTR(classNameStr), &instance->obj, args);
-	err = TTObjectBaseInstantiate("audio.object", (TTObjectBasePtr*)&instance->obj, args);
+	//err = TTObjectBaseInstantiate("audio.object", (TTObjectBasePtr*)&instance->obj, );
 	
 	if (!err) {
 		instance->parameterNames = new TTHash;	// TODO: need to free this
-		instance->obj->getUnitGenerator()->getAttributeNames(names);
+//		instance.obj->getUnitGenerator()->getAttributeNames(names);
+		instance->obj.attributes(names);
 		n = names.size();
 		for (int i=0; i<n; i++) {
 			names.get(i, aName);
@@ -608,7 +611,8 @@ VALUE TTAudioInitialize(int argc, VALUE* argv, VALUE self)
 		}
 
 		instance->messageNames = new TTHash;	// TODO: need to free this
-		instance->obj->getUnitGenerator()->getMessageNames(names);
+//		instance.obj->getUnitGenerator()->getMessageNames(names);
+		instance->obj.messages(names);
 		n = names.size();
 		for (int i=0; i<n; i++) {
 			names.get(i, aName);
@@ -729,7 +733,7 @@ VALUE TTAudioSendMessage(int argc, VALUE* argv, VALUE self)
 				}				
 
 				if (!err) {
-					err = instance->obj->getUnitGenerator()->sendMessage(messageName, v_in, v_out);
+					err = instance->obj.send(messageName, v_in, v_out);
 				}
 //			}
 
@@ -871,7 +875,7 @@ VALUE TTAudioSetAttribute(VALUE self, VALUE attributeName, VALUE attributeValue)
 				instance->parameterNames->lookup(parameterName, parameterNameValue);
 				parameterNameValue.get(0, parameterName);
 				
-				err = instance->obj->getUnitGenerator()->setAttributeValue(parameterName, v);
+				err = instance->obj.set(parameterName, v);
 			}
 			if (err)
 				std::cout << "TTAudioSetAttribute: Error " << err << std::endl;
@@ -903,7 +907,7 @@ VALUE TTAudioGetAttribute(VALUE self, VALUE attributeName)
 			instance->parameterNames->lookup(parameterName, parameterNameValue);
 			parameterNameValue.get(0, parameterName);
 			
-			err = instance->obj->getUnitGenerator()->getAttributeValue(parameterName, v);
+			err = instance->obj.get(parameterName, v);
 			if (err) {
 				std::cout << "TTAudioGetAttribute: Error " << err << std::endl;
 				goto out;
@@ -963,7 +967,7 @@ VALUE TTAudioReset(VALUE self)
 	if (!err) {
 		instance = (TTAudioInstance*)TTPtr(v[0]);
 		if (instance) {			
-			instance->obj->resetAudio();			
+			instance->obj.resetAudio();			
 		}
 	}
 	return self;
@@ -1006,7 +1010,7 @@ VALUE TTAudioConnect(int argc, VALUE* argv, VALUE self)
 	if (!err) {
 		instance = (TTAudioInstance*)TTPtr(v[0]);
 		if (instance) {			
-			instance->obj->connectAudio(instanceToConnect->obj, outletNumberFromWhichToConnect, inletNumberToWhichToConnect);			
+			instance->obj.connectAudio(instanceToConnect->obj, outletNumberFromWhichToConnect, inletNumberToWhichToConnect);			
 		}
 	}
 bye:
@@ -1050,7 +1054,7 @@ VALUE TTAudioDrop(int argc, VALUE* argv, VALUE self)
 	if (!err) {
 		instance = (TTAudioInstance*)TTPtr(v[0]);
 		if (instance) {
-			instance->obj->dropAudio(instanceToConnect->obj, outletNumberFromWhichToConnect, inletNumberToWhichToConnect);			
+			instance->obj.dropAudio(instanceToConnect->obj, outletNumberFromWhichToConnect, inletNumberToWhichToConnect);			
 		}
 	}
 bye:
@@ -1071,7 +1075,7 @@ VALUE TTAudioExportMax(VALUE self, VALUE pathToExportFile)
 	if (!err) {
 		instance = (TTAudioInstance*)TTPtr(v[0]);
 		if (instance) {
-			instance->obj->getAudioDescription(desc);
+			instance->obj.getAudioDescription(desc);
 			desc.exportMax(path);
 		}
 	}
@@ -1091,7 +1095,7 @@ VALUE TTAudioExportCpp(VALUE self, VALUE pathToExportFile)
 	if (!err) {
 		instance = (TTAudioInstance*)TTPtr(v[0]);
 		if (instance) {
-			instance->obj->getAudioDescription(desc);
+			instance->obj.getAudioDescription(desc);
 			desc.exportCpp(path);
 		}
 	}
