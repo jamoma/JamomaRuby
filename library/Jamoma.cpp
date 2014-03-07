@@ -30,10 +30,14 @@ public:
 	TTHashPtr				parameterNames;		// cache of parameter names, mapped from lowercase (ruby) to uppercase (TT)
 	TTHashPtr				messageNames;		// cache of parameter names, mapped from lowercase (ruby) to uppercase (TT)
 	
-	TTAudioInstance(const TTValue args) :
-	obj(args)
+	TTAudioInstance(const TTValue args)
 	{
-		;
+		try {
+			obj = TTAudioGraphObject(args);	
+		}
+		catch (...) {
+			std::cout << "Bogus Crap Happened Bros." << std::endl;
+		}
 	}
 };
 
