@@ -1,9 +1,9 @@
 #!/usr/bin/env ruby -wKU
 # encoding: utf-8
 
-if win?
-	puts "Ruby support is not currently built for Windows.  Please volunteer to help us!"
-else
+#if win?
+#	puts "Ruby support is not currently built for Windows.  Please volunteer to help us!"
+#else
 	puts "Building Ruby Language Extensions..."
 	 
 	if (RUBY_PLATFORM == "universal-darwin9.0")
@@ -16,4 +16,4 @@ else
 
 	puts
 	puts "=================DONE===================="
- end
+# end
