@@ -26,7 +26,7 @@ public:
 class TTAudioInstance {
 public:
 //	TTAudioGraphObjectBasePtr	obj;
-	TTAudioGraphObject		obj;
+	TTAudioGraphObject		obj  = { "dcblock" }; // defaulting to something safe
 	TTHashPtr				parameterNames;		// cache of parameter names, mapped from lowercase (ruby) to uppercase (TT)
 	TTHashPtr				messageNames;		// cache of parameter names, mapped from lowercase (ruby) to uppercase (TT)
 	
