@@ -13,9 +13,6 @@ wd = Dir.pwd
 Dir.chdir "../../../Core"
 dir_core = Dir.pwd
 
-Dir.chdir "#{dir_core}/Foundation/library/boost"
-dir_boost = Dir.pwd
-
 Dir.chdir "#{dir_core}/Foundation"
 dir_foundation = Dir.pwd
 
@@ -35,7 +32,7 @@ Dir.chdir wd
 # Includes and Libs
 
 incpath = "library/includes"
-includes = " -I #{dir_boost} -I #{dir_foundation}/#{incpath} -I #{dir_dsp}/#{incpath} -I #{dir_graph}/#{incpath} -I #{dir_audiograph}/library/includes "
+includes = " -I #{dir_foundation}/#{incpath} -I #{dir_dsp}/#{incpath} -I #{dir_graph}/#{incpath} -I #{dir_audiograph}/library/includes "
 
 
 #puts "config: #{inc}"
